@@ -36,6 +36,18 @@ pip install -e .
 
 Or use it directly by setting `PYTHONPATH=src`.
 
+## Quick Start
+
+```bash
+pip install -e .
+python -m smeha_memory learn --db local_memory.jsonl "Durable facts belong in the append-only floor."
+python -m smeha_memory recall --db local_memory.jsonl "durable facts"
+python -m smeha_memory status --db local_memory.jsonl
+```
+
+The `local_memory.jsonl` file is your private memory log. Do not commit it
+unless you intentionally want to publish its contents.
+
 ## Python Usage
 
 ```python
@@ -111,6 +123,17 @@ tooling and expose three operations:
 - `status()`
 
 Keep the JSONL file local unless you explicitly choose to share it.
+
+## Privacy And Safety
+
+- The package ships code only: no private database, exported graph, chat log, or
+  runtime configuration.
+- The default embedder is local and deterministic, so examples do not call any
+  external API.
+- Memory text is stored in plain JSONL for auditability. Put the JSONL file in a
+  private path, back it up deliberately, and keep it out of git by default.
+- If you add an MCP wrapper or stronger embedder, keep credentials in your own
+  secret store, not in this repository.
 
 ## Tests
 
