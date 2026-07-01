@@ -73,6 +73,44 @@ for hit in memory.recall("asset visibility dependency", k=3):
     print(round(hit.score, 3), hit.node.text)
 ```
 
+## Engine: Temporal Validity And Multi-Hop Connectivity
+
+`AgentMemoryEngine` wraps `SmehaMemory` and adds the two things a flat vector store
+structurally cannot do.
+
+**Temporal validity.** Facts change. `current(subject, predicate)` returns the LATEST
+value; a plain similarity index returns both the stale and the new mention and leaves
+the model to guess which is current.
+
+```python
+from smeha_memory import AgentMemoryEngine
+
+eng = AgentMemoryEngine()
+eng.remember_fact("project", "uses_storage", "Redis")
+eng.remember_fact("project", "uses_storage", "SQLite")   # the fact changed
+eng.current("project", "uses_storage")                   # -> "SQLite" (latest, not both)
+```
+
+**Multi-hop connectivity.** Some answers are connected to the query but not textually
+similar to it. Cosine similarity is similarity-bound and cannot compose hops; a graph
+can. `recall_connected` grounds the query to seed nodes, then traverses edges.
+
+```python
+eng.remember_fact("Alice", "teammate", "Bob")
+eng.remember_fact("Bob", "owns", "Redis cluster")        # the answer, two hops away
+
+eng.recall("Alice teammate", k=3)                        # flat: does NOT surface "Redis cluster"
+eng.recall_connected("Alice teammate", hops=2)           # traversal: reaches "Redis cluster"
+```
+
+This is where a graph memory earns its keep over a vector database: not flat recall
+(that is the vector database's strength) but composition over relations. See
+`tests/test_engine.py` for the head-to-head.
+
+**Extraction (optional).** `observe(text)` extracts `(subject, predicate, object)` facts
+from raw text via a local ollama model and records each with temporal validity. It needs
+a running ollama; everything else works offline with the default hashing embedder.
+
 ## Agent Usage Pattern
 
 Use it as a small durable memory layer around an agent:
